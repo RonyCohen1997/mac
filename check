@@ -1,0 +1,51 @@
+#!/bin/bash
+# Used-Mac check: paste into Terminal on the Mac you're buying. No password needed.
+hw=$(system_profiler SPHardwareDataType 2>/dev/null)
+pw=$(system_profiler SPPowerDataType 2>/dev/null)
+f() { echo "$1" | awk -F': ' -v k="$2" '$0 ~ k {print $2; exit}'; }
+fails=0
+chk() { if [ $? -eq 0 ]; then echo "✅ $1"; else echo "❌ $1"; fails=$((fails+1)); fi; }
+
+act=$(f "$hw" 'Activation Lock')
+nvram fmm-mobileme-token-FMM &>/dev/null && fm=ON || fm=off
+mdm=$(profiles status -type enrollment | tr '\n' ' ')
+d=/var/db/ConfigurationProfiles/Settings  # macOS caches Apple's ABM answer here, readable without a password
+if [ -e $d/.cloudConfigRecordFound ] || [ -e $d/.cloudConfigHasActivationRecord ]; then abm="company record found"
+elif [ -e $d/.cloudConfigRecordNotFound ] || [ -e $d/.cloudConfigNoActivationRecord ]; then abm="no company record"
+else abm="unknown, do the erase test"; fi
+cyc=$(f "$pw" 'Cycle Count'); cond=$(f "$pw" 'Condition'); max=$(f "$pw" 'Maximum Capacity')
+
+echo "ℹ️  Model:   $(f "$hw" 'Model Name') / $(f "$hw" 'Chip|Processor Name') / $(f "$hw" 'Memory') RAM"
+echo "ℹ️  Serial:  $(f "$hw" 'Serial Number')  -> verify at checkcoverage.apple.com"
+echo "ℹ️  macOS:   $(sw_vers -productVersion)   Disk: $(df -h / | awk 'NR==2{print $2}')"
+echo "ℹ️  Users:   $(dscl . list /Users | grep -vE '^(_|daemon$|nobody$|root$)' | tr '\n' ' ')"
+echo "ℹ️  Apple ID: $(defaults read MobileMeAccounts Accounts 2>/dev/null | awk -F' = ' '/AccountID/{gsub(/[";]/,"",$2); print $2; exit}' | grep . || echo none)"
+sd=$(stat -f %m /var/db/.AppleSetupDone 2>/dev/null)  # when the "Hello" setup last finished = last wipe
+if [ -z "$sd" ]; then echo "ℹ️  Last wiped: unknown"
+elif [ "$(date -r $sd +%F)" = "$(date +%F)" ]; then echo "✅ Last wiped: today"
+else echo "ℹ️  Last wiped: $(date -r $sd +%F), $(( ($(date +%s)-sd)/86400 )) days ago  (should say today after you erase it)"; fi
+[[ $act == Disabled ]];                chk "Activation Lock: $act"
+[[ $fm == off ]];                       chk "Find My: $fm"
+[[ $mdm == *"DEP: No"* && $mdm == *"enrollment: No"* ]]; chk "MDM: $mdm"
+[[ $abm == "no company record" ]];      chk "ABM: $abm"
+if [ -n "$cyc" ]; then
+  [[ $cond == Normal && $cyc -lt 1000 ]]; chk "Battery: $cyc cycles, $cond, max $max"
+fi
+# Hardware macOS can see. ponytail: assumes a MacBook; on a Mac mini/Studio camera and mic show ❌.
+sp=$(system_profiler SPAudioDataType SPCameraDataType SPBluetoothDataType 2>/dev/null)
+det() { if grep -qE "$2" <<<"$sp"; then echo "✅ $1: found"; else echo "❌ $1: missing"; fails=$((fails+1)); fi; }
+smart=$(diskutil info disk0 | awk -F': *' '/SMART/{print $2}')
+wifi=$(networksetup -getairportpower "$(networksetup -listallhardwareports | awk '/Wi-Fi/{getline; print $2}')" 2>/dev/null | awk '{print $NF}')
+bt=$(awk '/State:/{print $2; exit}' <<<"$sp")
+pmset -g batt | grep -q 'AC Power' && ac="plugged in, $(f "$pw" 'Wattage')W" || ac="not plugged in"
+[[ $smart == Verified ]];  chk "Disk health: ${smart:-unknown}"
+det Camera 'Model ID'
+det Microphone 'Microphone:'
+det Speakers 'Speakers:|Built-in Output:'
+[[ $wifi == On ]];         chk "Wi-Fi: ${wifi:-missing}"
+[[ $bt == On ]];           chk "Bluetooth: ${bt:-missing}"
+[[ $ac == plugged* ]];     chk "Charger: $ac"
+echo "👆 By hand: screen, every key, trackpad, sound quality, camera picture, each port charges"
+f "$hw" 'Serial Number' | tr -d '\n' | pbcopy; open https://checkcoverage.apple.com
+echo "🌐 Coverage page opened, serial is in clipboard: paste it (⌘V) + captcha"
+[ $fails -eq 0 ] && echo "✅ ALL GOOD" || echo "❌ $fails problem(s) — don't buy until explained"

@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Used Mac Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: one inspection column, three ordered steps; each step is a bench holding its own test instrument. */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#151A21; --muted:#5B6573; --line:#D8DDE4;
+  --accent:#2B59C3; --accent-ink:#FFFFFF; --pass:#1E7A4B; --fail:#BF3328; --key:#E8ECF1;
+  --term:#10151C; --term-ink:#D6DEE8;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1116; --surface:#161B22; --ink:#E6EAF0; --muted:#98A2AF; --line:#29303A;
+  --accent:#86A8FF; --accent-ink:#0E1116; --pass:#4FC48C; --fail:#FF7C70; --key:#212833;
+  --term:#0A0D12; --term-ink:#D6DEE8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1116; --surface:#161B22; --ink:#E6EAF0; --muted:#98A2AF; --line:#29303A;
+  --accent:#86A8FF; --accent-ink:#0E1116; --pass:#4FC48C; --fail:#FF7C70; --key:#212833;
+  --term:#0A0D12; --term-ink:#D6DEE8; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 var(--f-body)}
+.wrap{max-width:800px;margin:0 auto;padding-block:40px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:48px}
+header{display:flex;flex-direction:column;gap:8px}
+h1{font:700 clamp(30px,5vw,42px)/1.1 var(--f-display);margin:0;text-wrap:balance}
+header p{color:var(--muted);margin:0;max-width:62ch}
+section{display:flex;flex-direction:column;gap:16px}
+.step{font:600 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h2{font:700 24px/1.2 var(--f-display);margin:-8px 0 0;text-wrap:balance}
+h3{font:600 16px/1.3 var(--f-body);margin:0}
+p{margin:0}
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}}
+ol,ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:600 14px var(--f-body);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,.kbd:focus-visible,.pad:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,kbd{font-family:var(--f-mono);font-size:.88em}
+.muted{color:var(--muted)}
+.term{background:var(--term);color:var(--term-ink);font:12.5px/1.6 var(--f-mono);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0;white-space:pre}
+details summary{cursor:pointer;color:var(--muted);font-size:14px}
+details[open] summary{margin-bottom:10px}
+.tag{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:10px;border-top:1px solid var(--line);vertical-align:top}
+th{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-top:0}
+td:first-child{font-weight:600;white-space:nowrap}
+.kbdbox{overflow-x:auto}
+.kbd{min-width:640px;display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:8px;border:1px dashed var(--line);outline:none;cursor:pointer}
+.kbd.on{border-style:solid;border-color:var(--accent);cursor:default}
+.krow{display:flex;gap:5px}
+.k{flex:1 1 0;height:36px;border-radius:5px;background:var(--key);display:grid;place-items:center;font:500 11px var(--f-mono);color:var(--muted);transition:background .15s,color .15s}
+.k.hit{background:var(--accent);color:var(--accent-ink)}
+.k.down{transform:translateY(1px)}
+.k.blind{background:transparent;border:1px dashed var(--line)}
+.arrows{flex:1 1 0;display:flex;flex-direction:column;gap:2px}
+.arrows .k{height:17px}
+.gap{flex:13 1 0}
+.pad{height:150px;border-radius:10px;border:1px dashed var(--line);display:grid;place-items:center;color:var(--muted);user-select:none;-webkit-user-select:none;text-align:center;padding:0 16px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:600 12px var(--f-mono);padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.ok{border-color:var(--pass);color:var(--pass)}
+.chip.ok::before{content:"✓ "}
+.count{font:600 13px var(--f-mono);color:var(--muted)}
+.count.ok{color:var(--pass)}
+.check{list-style:none;padding:0;gap:10px}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.warn{color:var(--fail);font-weight:600}
+#screen{position:fixed;inset:0;z-index:100;cursor:none;display:grid;place-items:end center;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+#screen span{font:500 13px var(--f-mono);padding:6px 12px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;transition:opacity .6s}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<script type="text/plain" id="src">
+hw=$(system_profiler SPHardwareDataType 2>/dev/null)
+pw=$(system_profiler SPPowerDataType 2>/dev/null)
+f() { echo "$1" | awk -F': ' -v k="$2" '$0 ~ k {print $2; exit}'; }
+fails=0
+chk() { if [ $? -eq 0 ]; then echo "✅ $1"; else echo "❌ $1"; fails=$((fails+1)); fi; }
+
+act=$(f "$hw" 'Activation Lock')
+nvram fmm-mobileme-token-FMM &>/dev/null && fm=ON || fm=off
+mdm=$(profiles status -type enrollment | tr '\n' ' ')
+d=/var/db/ConfigurationProfiles/Settings
+if [ -e $d/.cloudConfigRecordFound ] || [ -e $d/.cloudConfigHasActivationRecord ]; then abm="company record found"
+elif [ -e $d/.cloudConfigRecordNotFound ] || [ -e $d/.cloudConfigNoActivationRecord ]; then abm="no company record"
+else abm="unknown, do the erase test"; fi
+cyc=$(f "$pw" 'Cycle Count'); cond=$(f "$pw" 'Condition'); max=$(f "$pw" 'Maximum Capacity')
+
+echo "ℹ️  Model:   $(f "$hw" 'Model Name') / $(f "$hw" 'Chip|Processor Name') / $(f "$hw" 'Memory') RAM"
+echo "ℹ️  Serial:  $(f "$hw" 'Serial Number')  -> verify at checkcoverage.apple.com"
+echo "ℹ️  macOS:   $(sw_vers -productVersion)   Disk: $(df -h / | awk 'NR==2{print $2}')"
+echo "ℹ️  Users:   $(dscl . list /Users | grep -vE '^(_|daemon$|nobody$|root$)' | tr '\n' ' ')"
+echo "ℹ️  Apple ID: $(defaults read MobileMeAccounts Accounts 2>/dev/null | awk -F' = ' '/AccountID/{gsub(/[";]/,"",$2); print $2; exit}' | grep . || echo none)"
+sd=$(stat -f %m /var/db/.AppleSetupDone 2>/dev/null)
+if [ -z "$sd" ]; then echo "ℹ️  Last wiped: unknown"
+elif [ "$(date -r $sd +%F)" = "$(date +%F)" ]; then echo "✅ Last wiped: today"
+else echo "ℹ️  Last wiped: $(date -r $sd +%F), $(( ($(date +%s)-sd)/86400 )) days ago  (should say today after you erase it)"; fi
+[[ $act == Disabled ]];                chk "Activation Lock: $act"
+[[ $fm == off ]];                       chk "Find My: $fm"
+[[ $mdm == *"DEP: No"* && $mdm == *"enrollment: No"* ]]; chk "MDM: $mdm"
+[[ $abm == "no company record" ]];      chk "ABM: $abm"
+if [ -n "$cyc" ]; then
+  [[ $cond == Normal && $cyc -lt 1000 ]]; chk "Battery: $cyc cycles, $cond, max $max"
+fi
+sp=$(system_profiler SPAudioDataType SPCameraDataType SPBluetoothDataType 2>/dev/null)
+det() { if grep -qE "$2" <<<"$sp"; then echo "✅ $1: found"; else echo "❌ $1: missing"; fails=$((fails+1)); fi; }
+smart=$(diskutil info disk0 | awk -F': *' '/SMART/{print $2}')
+wifi=$(networksetup -getairportpower "$(networksetup -listallhardwareports | awk '/Wi-Fi/{getline; print $2}')" 2>/dev/null | awk '{print $NF}')
+bt=$(awk '/State:/{print $2; exit}' <<<"$sp")
+pmset -g batt | grep -q 'AC Power' && ac="plugged in, $(f "$pw" 'Wattage')W" || ac="not plugged in"
+[[ $smart == Verified ]];  chk "Disk health: ${smart:-unknown}"
+det Camera 'Model ID'
+det Microphone 'Microphone:'
+det Speakers 'Speakers:|Built-in Output:'
+[[ $wifi == On ]];         chk "Wi-Fi: ${wifi:-missing}"
+[[ $bt == On ]];           chk "Bluetooth: ${bt:-missing}"
+[[ $ac == plugged* ]];     chk "Charger: $ac"
+f "$hw" 'Serial Number' | tr -d '\n' | pbcopy; open https://checkcoverage.apple.com
+echo "🌐 Coverage page opened, serial is in clipboard: paste it (⌘V) + captcha"
+[ $fails -eq 0 ] && echo "✅ ALL GOOD" || echo "❌ $fails problem(s) — don't buy until explained"
+</script>
+
+<div class="wrap">
+  <header>
+    <h1>Used Mac Check</h1>
+    <p>Open this page on the Mac you're about to buy. Step 1 checks the locks and the battery in Terminal. Step 2 tests the screen, keyboard, trackpad and speakers on this page.</p>
+  </header>
+
+  <section>
+    <div class="step">Step 1 · Terminal</div>
+    <h2>Run the system check</h2>
+    <div class="bench">
+      <ol>
+        <li>Press <kbd>⌘ Space</kbd>, type <b>Terminal</b>, press Return.</li>
+        <li>Copy the check, paste it into Terminal with <kbd>⌘V</kbd>, press Return.</li>      </ol>
+      <div class="row">
+        <button class="primary" id="copy">Copy the check</button>
+        <span id="copied" class="muted" aria-live="polite"></span>
+      </div>
+      <p class="muted">Or type this one line in Terminal:</p>
+      <pre class="term">curl -sL ronycohen1997.github.io/mac/check | bash</pre>
+      <details id="det"><summary>Show what it runs</summary><pre class="term" id="code"></pre></details>
+    </div>
+
+    <div class="bench">
+      <div class="tag">Example result</div>
+<pre class="term">ℹ️  Model:   MacBook Air / Apple M2 / 8 GB RAM
+ℹ️  Serial:  C02XXXXXXXXX  -> verify at checkcoverage.apple.com
+ℹ️  macOS:   15.5   Disk: 228Gi
+ℹ️  Users:   dana
+ℹ️  Apple ID: dana@icloud.com
+ℹ️  Last wiped: 2024-03-02, 997 days ago  (should say today after you erase it)
+✅ Activation Lock: Disabled
+✅ Find My: off
+✅ MDM: Enrolled via DEP: No MDM enrollment: No
+✅ ABM: no company record
+✅ Battery: 212 cycles, Normal, max 91%
+✅ Disk health: Verified
+✅ Camera: found
+✅ Microphone: found
+✅ Speakers: found
+✅ Wi-Fi: On
+✅ Bluetooth: On
+✅ Charger: plugged in, 30W
+🌐 Coverage page opened, serial is in clipboard: paste it (⌘V) + captcha
+✅ ALL GOOD</pre>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>Line</th><th>❌ means</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>Activation Lock</td><td>Locked to someone's Apple ID. After an erase it won't set up without their password.</td><td>Seller turns off Find My. Don't pay until it says Disabled.</td></tr>
+          <tr><td>Find My</td><td>The seller is still signed in to iCloud.</td><td>Seller signs out in System Settings › Apple Account.</td></tr>
+          <tr><td>MDM</td><td>A company or school manages this Mac right now.</td><td>Walk away.</td></tr>
+          <tr><td>ABM</td><td>Apple ties the serial to an organization. An erase puts it back under their control. "Unknown" means macOS never asked Apple, so rely on the erase in step 3.</td><td>Walk away. Only that organization can release it.</td></tr>
+          <tr><td>Battery</td><td>macOS says "Service Recommended", or 1000+ cycles.</td><td>Price in a new battery.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bench">
+      <h3>Without Terminal</h3>
+      <p class="muted">The same checks by clicking, if the seller won't let you paste anything.</p>
+      <ul>
+        <li><b>Activation Lock:</b> hold <kbd>⌥ Option</kbd>, Apple menu › System Information › Hardware shows "Activation Lock Status: Disabled".</li>
+        <li><b>Find My:</b> System Settings › Apple Account › iCloud shows Find My Mac off.</li>
+        <li><b>MDM:</b> System Settings › General › Device Management lists nothing. On older macOS it's Privacy &amp; Security › Profiles.</li>
+        <li><b>ABM:</b> no screen shows it. The erase in step 3 is the test.</li>
+        <li><b>Battery:</b> System Information › Power shows Cycle Count and Condition.</li>
+        <li><b>Coverage:</b> System Settings › General › About › Coverage.</li>
+        <li><b>Users and Apple ID:</b> System Settings › Users &amp; Groups lists every account; the top of System Settings shows who is signed in.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="step">Step 2 · This page</div>
+    <h2>Test the hardware</h2>
+    <div class="grid2">
+      <div class="bench">
+        <h3>Screen</h3>
+        <p class="muted">Fills the screen with solid colors. Look for dots that stay black, white or colored. Click for the next color, Esc to stop.</p>
+        <div class="row"><button id="scr">Start screen test</button></div>
+      </div>
+      <div class="bench">
+        <h3>Speakers</h3>
+        <p class="muted">A tone in each speaker, then a low-to-high sweep. Listen for crackle or buzzing.</p>
+        <div class="row">
+          <button data-pan="-1">Left</button><button data-pan="1">Right</button><button id="sweep">Sweep</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bench">
+      <div class="row" style="justify-content:space-between">
+        <h3>Keyboard</h3>
+        <div class="row"><span class="count" id="kcount"></span><button id="kreset">Reset</button></div>
+      </div>
+      <p class="muted">Click the keyboard, then press every key once, letting go before the next one (⌘ + Space opens Spotlight). Keys turn blue when they work. Browsers can't see fn: press it alone, and if the emoji picker, dictation or language switcher opens, it works (Esc closes it). Test the top row (brightness, volume, Touch ID) by hand.</p>
+      <div class="kbdbox"><div class="kbd" id="kbd" tabindex="0" aria-label="Keyboard test: focus here and press keys"></div></div>
+    </div>
+
+    <div class="bench">
+      <h3>Trackpad</h3>
+      <div class="pad" id="pad">Click, two-finger click, and two-finger scroll in here</div>
+      <div class="chips"><span class="chip" id="t-click">Click</span><span class="chip" id="t-right">Two-finger click</span><span class="chip" id="t-scroll">Scroll</span></div>
+    </div>
+
+    <div class="bench">
+      <div class="row" style="justify-content:space-between"><h3>By hand</h3><span class="count" id="hcount"></span></div>
+      <ul class="check" id="hand">
+        <li><label><input type="checkbox" id="h1">Camera and mic: open Photo Booth, record a few seconds, play it back.</label></li>
+        <li><label><input type="checkbox" id="h2">Charging: plug the charger into each port in turn, and the battery icon shows charging.</label></li>
+        <li><label><input type="checkbox" id="h3">Brightness, volume and Touch ID respond.</label></li>
+        <li><label><input type="checkbox" id="h4">Wi-Fi and Bluetooth connect.</label></li>
+        <li><label><input type="checkbox" id="h5">No dents or bent corners, no worn patches on the screen, and the hinge holds the lid at any angle.</label></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="step">Step 3 · Before you pay</div>
+    <h2>Check coverage, then erase it together</h2>
+    <div class="bench">
+      <ol>
+        <li>On the coverage page the check opened, paste the serial. The model and purchase date should match the listing. <a href="https://checkcoverage.apple.com" target="_blank" rel="noopener">checkcoverage.apple.com</a></li>
+        <li>Ask the seller to erase it in front of you: System Settings › General › Transfer or Reset › Erase All Content and Settings.</li>
+        <li>Go through setup until you reach the desktop. <span class="warn">If a Remote Management screen appears, or it asks for an Apple ID that isn't yours, walk away.</span></li>
+        <li>Run the check once more. Users should list only the account you just made, Apple ID should be yours or none, and Last wiped should say today. Anything else means the erase didn't happen.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script>
+const SRC = document.getElementById('src').textContent.trim();
+const PASTE = "bash <<'EOF'\n" + SRC + "\nEOF\n";
+const code = document.getElementById('code'), copied = document.getElementById('copied');
+code.textContent = PASTE;
+document.getElementById('copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(PASTE).then(
+    () => { copied.textContent = 'Copied. Paste it into Terminal.'; },
+    () => {
+      document.getElementById('det').open = true;
+      const r = document.createRange(); r.selectNodeContents(code);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      copied.textContent = 'Copy was blocked. The check is selected below: press ⌘C.';
+    });
+});
+
+// Screen
+const COLORS = ['#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff', '#808080'];
+let scr = null, si = 0;
+function endScreen() {
+  if (!scr) return;
+  scr.remove(); scr = null;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+function nextColor() {
+  if (++si >= COLORS.length) return endScreen();
+  scr.style.background = COLORS[si];
+}
+document.getElementById('scr').addEventListener('click', () => {
+  scr = document.createElement('div'); scr.id = 'screen';
+  scr.innerHTML = '<span>Click for next color · Esc to stop</span>';
+  si = 0; scr.style.background = COLORS[0];
+  scr.addEventListener('click', nextColor);
+  document.body.append(scr);
+  document.documentElement.requestFullscreen?.().catch(() => {});
+  setTimeout(() => { if (scr) scr.firstChild.style.opacity = 0; }, 2500);
+});
+document.addEventListener('keydown', e => {
+  if (!scr) return;
+  if (e.key === 'Escape') endScreen();
+  else if (e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); nextColor(); }
+});
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) endScreen(); });
+
+// Speakers
+let ac;
+function audio() { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); return ac; }
+function envelope(g, t, peak, len) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + 0.05);
+  g.gain.setValueAtTime(peak, t + len - 0.2);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+}
+document.querySelectorAll('[data-pan]').forEach(b => b.addEventListener('click', () => {
+  const a = audio(), t = a.currentTime, o = a.createOscillator(), g = a.createGain(), p = a.createStereoPanner();
+  o.frequency.value = 440; p.pan.value = +b.dataset.pan; envelope(g, t, 0.25, 1.2);
+  o.connect(g).connect(p).connect(a.destination); o.start(t); o.stop(t + 1.25);
+}));
+document.getElementById('sweep').addEventListener('click', () => {
+  const a = audio(), t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+  o.frequency.setValueAtTime(40, t); o.frequency.exponentialRampToValueAtTime(4000, t + 6); envelope(g, t, 0.2, 6);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + 6.05);
+});
+
+// Keyboard (Mac ANSI layout; codes are physical keys, so the input language doesn't matter)
+const L = { Escape:'esc', Backquote:'`', Minus:'-', Equal:'=', Backspace:'delete', Tab:'tab', BracketLeft:'[', BracketRight:']', Backslash:'\\',
+  CapsLock:'caps', Semicolon:';', Quote:"'", Enter:'return', ShiftLeft:'shift', ShiftRight:'shift', Comma:',', Period:'.', Slash:'/',
+  ControlLeft:'control', AltLeft:'option', MetaLeft:'⌘', Space:'space', MetaRight:'⌘', AltRight:'option',
+  ArrowLeft:'←', ArrowUp:'↑', ArrowDown:'↓', ArrowRight:'→', _fn:'fn' };
+const W = { Escape:1.5, Backspace:1.5, Tab:1.5, CapsLock:1.8, Enter:1.8, ShiftLeft:2.3, ShiftRight:2.3, Space:5, MetaLeft:1.25, MetaRight:1.25 };
+const seq = (p, s) => s.split('').map(c => p + c);
+const ROWS = [
+  ['Escape', '_gap'],
+  ['Backquote', ...seq('Digit', '1234567890'), 'Minus', 'Equal', 'Backspace'],
+  ['Tab', ...seq('Key', 'QWERTYUIOP'), 'BracketLeft', 'BracketRight', 'Backslash'],
+  ['CapsLock', ...seq('Key', 'ASDFGHJKL'), 'Semicolon', 'Quote', 'Enter'],
+  ['ShiftLeft', ...seq('Key', 'ZXCVBNM'), 'Comma', 'Period', 'Slash', 'ShiftRight'],
+  ['_fn', 'ControlLeft', 'AltLeft', 'MetaLeft', 'Space', 'MetaRight', 'AltRight', 'ArrowLeft', '_arrows', 'ArrowRight']
+];
+const kbd = document.getElementById('kbd'), kcount = document.getElementById('kcount'), keys = {};
+function makeKey(c) {
+  const k = document.createElement('div');
+  k.className = 'k' + (c === '_fn' ? ' blind' : '');
+  k.textContent = L[c] ?? c.replace(/^(Key|Digit)/, '');
+  k.style.flexGrow = W[c] || 1;
+  if (c[0] !== '_') keys[c] = k;
+  return k;
+}
+for (const row of ROWS) {
+  const r = document.createElement('div'); r.className = 'krow';
+  for (const c of row) {
+    if (c === '_gap') { const g = document.createElement('div'); g.className = 'gap'; r.append(g); }
+    else if (c === '_arrows') { const a = document.createElement('div'); a.className = 'arrows'; a.append(makeKey('ArrowUp'), makeKey('ArrowDown')); r.append(a); }
+    else r.append(makeKey(c));
+  }
+  kbd.append(r);
+}
+const TOTAL = Object.keys(keys).length;
+function kUpdate() {
+  const n = kbd.querySelectorAll('.k.hit').length;
+  kcount.textContent = n === TOTAL ? 'All ' + TOTAL + ' keys work' : n + ' / ' + TOTAL + ' keys';
+  kcount.classList.toggle('ok', n === TOTAL);
+}
+kbd.addEventListener('keydown', e => {
+  const k = keys[e.code]; if (!k) return;
+  e.preventDefault(); k.classList.add('hit', 'down'); kUpdate();
+});
+kbd.addEventListener('keyup', e => {
+  if (e.key === 'Meta') kbd.querySelectorAll('.down').forEach(k => k.classList.remove('down'));
+  keys[e.code]?.classList.remove('down');
+});
+kbd.addEventListener('focus', () => kbd.classList.add('on'));
+kbd.addEventListener('blur', () => kbd.classList.remove('on'));
+document.getElementById('kreset').addEventListener('click', () => { Object.values(keys).forEach(k => k.classList.remove('hit', 'down')); kUpdate(); kbd.focus(); });
+kUpdate();
+
+// Trackpad
+const pad = document.getElementById('pad'), ok = id => document.getElementById(id).classList.add('ok');
+pad.addEventListener('click', () => ok('t-click'));
+pad.addEventListener('contextmenu', e => { e.preventDefault(); ok('t-right'); });
+pad.addEventListener('wheel', e => { e.preventDefault(); ok('t-scroll'); }, { passive: false });
+
+// By-hand checklist
+const hand = document.querySelectorAll('#hand input'), hcount = document.getElementById('hcount');
+function hUpdate() {
+  const n = [...hand].filter(i => i.checked).length;
+  hcount.textContent = n === hand.length ? 'All done' : n + ' / ' + hand.length + ' done';
+  hcount.classList.toggle('ok', n === hand.length);
+}
+hand.forEach(i => i.addEventListener('change', hUpdate)); hUpdate();
+</script>
